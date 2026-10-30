@@ -2,10 +2,12 @@ from pcb import PCB
 from memoria import Memoria
 from planificador import Planificador
 from semaforo import Semaforo
+from deadlock import GestorRecursos
 
 memoria = Memoria()
 planificador = Planificador(memoria)
 semaforo = Semaforo()
+recursos = GestorRecursos()
 variable_compartida = 0
 procesos = []
 siguiente_pid = 1
@@ -73,6 +75,51 @@ def salir_seccion_critica():
         return
     semaforo.signal(pcb)
 
+def buscar_pcb(mensaje):
+    pid = leer_entero(mensaje)
+    pcb = next ((p for p in procesos if p.pid == pid), None)
+    if pcb is None:
+        print("Error: ese PID no existe.")
+    return pcb
+
+def simulador_deadlock():
+    """Fuerza el bloque: A retiene R1 y pide R2; B retiene R2 y pide R1."""
+    print("\n--- Simulacion de Deadlock ---")
+    a = buscar_pcb("PID del Proceso A: ")
+    if a is None:
+        return
+    b = buscar_pcb("PID del proceso B:")
+    if b is None:
+        return
+    if a.pid == b.pid:
+        print("Error: deben ser dos procesos distintos.")
+        return
+    recursos.solicitar(a, 1)
+    recursos.solicitar(b, 2)
+    recursos.solicitar(a, 2)
+    recursos.solicitar(b, 1)
+    verificar_deadlock()
+
+def verificar_deadlock():
+    ciclo = recursos.detectar_deadlock()
+    if ciclo:
+        print(f"\n[ALERTA] DEADLOCK detectado entre los procesos: {ciclo}")
+        print("Usa la opcion 9 para abortar uno de ellos.")
+    else:
+        print("\nNo hay deadlock.")
+
+def abortar_proceso():
+    print("\n--- Abortar proceso ---")
+    pcb = buscar_pcb("PID del proceso a abortar: ")
+    if pcb is None:
+        return
+    recursos.liberar_todos(pcb.pid)
+    memoria.liberar(pcb.pid)
+    pcb.estado = "terminado (abortado)"
+    print (f"PID {pcb.pid} abortado forzosamente.")
+    verificar_deadlock()
+
+
 def menu():
         while True:
             print("\n--- SIMULADOR DE KERNEL ---")
@@ -82,6 +129,9 @@ def menu():
             print("4. Ejecutar Round Robin")
             print("5. Entrar a sección crítica (wait)")
             print("6. Salir de seccion critica (signal)")
+            print("7. simular Deadlock")
+            print("8. Detectar Deadlock")
+            print("9. Abortar un proceso")
             print("0. Salir")
             opcion = input("Selecciona una opción: ")
 
@@ -97,6 +147,12 @@ def menu():
                 seccion_critica()
             elif opcion == "6":
                 salir_seccion_critica()
+            elif opcion == "7":
+                simulador_deadlock()
+            elif opcion == "8":
+                verificar_deadlock()
+            elif opcion == "9":
+                abortar_proceso()
             elif opcion == "0":
                 print("Saliendo...")
                 break
