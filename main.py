@@ -1,7 +1,9 @@
 from pcb import PCB
 from memoria import Memoria
+from planificador import Planificador
 
 memoria = Memoria()
+planificador = Planificador(memoria)
 procesos = []
 siguiente_pid = 1
 
@@ -35,6 +37,7 @@ def ingresar_proceso():
     pcb = PCB(siguiente_pid, tamano, rafaga)
     pcb.estado = "listo"
     procesos.append(pcb)
+    planificador.agregar(pcb)
     print(f"\nProceso {siguiente_pid} creado en RAM (inicio: {inicio}MB).")
     siguiente_pid += 1
 
@@ -52,6 +55,7 @@ def menu():
             print("1. Ingresar proceso")
             print("2. Ver procesos (PCB)")
             print("3. Ver memoria RAM")
+            print("4. Ejecutar Round Robin")
             print("0. Salir")
             opcion = input("Selecciona una opción: ")
 
@@ -61,6 +65,8 @@ def menu():
                 ver_procesos()
             elif opcion == "3":
                 memoria.mostrar()
+            elif opcion == "4":
+                planificador.ejecutar()
             elif opcion == "0":
                 print("Saliendo...")
                 break
